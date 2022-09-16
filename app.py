@@ -1,6 +1,7 @@
+from re import S
 from fastapi import FastAPI
 from routes.webhook import webhook, state, result_setted
-# import requests
+import requests
 import asyncio
 import aiohttp
 # import time
@@ -14,6 +15,7 @@ app.include_router(webhook)
 @app.get("/")
 async def hello():
     global result_setted
+    resArray = []
     data = {
         "username": "5192351",
         "password": "J94:VqDt",
@@ -23,31 +25,46 @@ async def hello():
         "billing_password": "D6eXbdSJ",
         "check": "0",
         "url_in": "https://uanataca.pythonanywhere.com/sample.pdf",
-        "url_out": "http://192.168.0.101:8000/result",
-        "urlback": "http://192.168.0.101:8000/services",
+        "url_out": "http://192.168.11.5:8000/result",
+        "urlback": "http://192.168.11.5:8000/services",
         "level": "BES",
         "env": "test",
         "identifier": "DS0"
 
     }
+    for i in range(10):
+        print(i)
+        async with aiohttp.ClientSession() as session:
+            async with session.post('http://192.168.1.61/api/sign', data=data) as response:
+                await asyncio.sleep(0.5)
 
-    async with aiohttp.ClientSession() as session:
-        async with session.post('http://192.168.0.14/api/sign', data=data) as response:
-            id = await response.text()
-            print("Call webhook")
+                id = await response.text()
+                print(id)
+                # state["id_transaccion"] = str(id)[3:]
 
-            # WAIT FOR RESULT WEBHOOK
-            while True:
-                if result_setted['result']:
-                    break
-                else:
-                    await asyncio.sleep(0.01)
-                    
+    # WAIT FOR RESULT WEBHOOK
+    for i in range(10):
+        print(i)
+        state["documento_base64"] = ""
+        state["firmado"] = False
+        state["id_transaccion"] = ""
+        print("Call webhook")
 
-            return state
+        print(state)
+        while True:
 
-    # res = requests.post('http://192.168.0.14/api/sign',data)
-    # time.sleep(1)
-    # print(res)
-    # print(state)#
-    # return state
+            if ((result_setted['result'] and result_setted['services']) or (result_setted["services"])):
+                print("webhook visitado")
+                current_status = state.copy()
+
+                resArray.append(current_status)
+
+                break
+            else:
+                await asyncio.sleep(0.0005)
+
+        result_setted['result'] = False
+        result_setted['services'] = False
+
+    print("Proceso")
+    return {"data": resArray}
