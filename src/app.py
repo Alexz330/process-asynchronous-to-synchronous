@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 import uvicorn
-from routes.sign import sign
+from src.routes.sign import sign
 
 
 app = FastAPI()

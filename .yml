@@ -1,0 +1,51 @@
+version: "3"
+
+services:
+
+    api:
+        image: signbox
+        command: /opt/bit4id/de/bin/de.exe --console api 0
+        volumes:
+            - ./etc/settings.ini:/opt/bit4id/de/etc/settings.ini
+            - db_storage:/opt/bit4id/de/var/
+        environment:
+            CRYPTOSVC_URL: http://cryptosvc:4096
+            DOCKER_RUNNING: 1
+        ports:
+            - "8080"
+    cryptosvc:
+        image: signbox
+        command: /opt/bit4id/de/bin/de.exe --console cryptosvc 0
+        environment:
+            CRYPTOSVC_INTERFACE: cryptosvc
+            DOCKER_RUNNING: 1
+        volumes:
+            - ./etc/tsa/:/opt/bit4id/de/etc/tsa/
+            - ./etc/trusted_roots/certs/:/opt/bit4id/de/etc/trusted_roots/certs/
+            - ./etc/img/:/opt/bit4id/de/etc/img/
+            - ./etc/settings.ini:/opt/bit4id/de/etc/settings.ini
+            - db_storage:/opt/bit4id/de/var/
+        ports:
+            - "4096"
+    nginx:
+        container_name: nginx
+        depends_on:
+          - api
+          - cryptosvc
+        image: nginx
+        volumes:
+            - ./etc/nginx/de.conf:/etc/nginx/conf.d/de.conf
+        ports:
+            - 80:80
+        networks:
+          customnetwork:
+            ipv4_address: 172.20.0.12
+    custom:
+        build: .
+        ports:
+          - "5002:80"
+        volumes:
+          - .:/custom
+
+volumes:
+    db_storage:
